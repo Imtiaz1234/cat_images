@@ -60,7 +60,7 @@ export function TelemetryCard({ generator }: { generator: GeneratorSnapshot }) {
         </span>
       </div>
 
-      <dl className="mt-6 grid grid-cols-2 gap-5">
+      <dl className="mt-6 grid grid-cols-1 gap-5">
         <div>
           <dt
             className={`text-xs uppercase tracking-wider ${
@@ -70,13 +70,13 @@ export function TelemetryCard({ generator }: { generator: GeneratorSnapshot }) {
             Active load
           </dt>
           <dd
-            className={`mt-2 flex flex-wrap items-baseline gap-x-2 font-mono text-[clamp(2.75rem,5vw,4.5rem)] font-semibold leading-none tracking-tight tabular-nums ${
+            className={`mt-2 flex items-baseline gap-x-2 font-mono text-[clamp(3rem,4.5vw,4.25rem)] font-semibold leading-none tracking-tight tabular-nums ${
               isCritical ? "text-white" : "text-slate-50"
             }`}
           >
             {formatNumber(generator.loadMw, 1)}
             <span
-              className={`text-xl font-normal ${
+              className={`text-2xl font-normal ${
                 isCritical ? "text-red-100/80" : "text-slate-400"
               }`}
             >
@@ -93,13 +93,13 @@ export function TelemetryCard({ generator }: { generator: GeneratorSnapshot }) {
             Voltage
           </dt>
           <dd
-            className={`mt-2 flex flex-wrap items-baseline gap-x-2 font-mono text-[clamp(2.75rem,5vw,4.5rem)] font-semibold leading-none tracking-tight tabular-nums ${
+            className={`mt-2 flex items-baseline gap-x-2 font-mono text-[clamp(3rem,4.5vw,4.25rem)] font-semibold leading-none tracking-tight tabular-nums ${
               isCritical ? "text-white" : "text-slate-50"
             }`}
           >
             {formatNumber(generator.voltageKv, 2)}
             <span
-              className={`text-xl font-normal ${
+              className={`text-2xl font-normal ${
                 isCritical ? "text-red-100/80" : "text-slate-400"
               }`}
             >
