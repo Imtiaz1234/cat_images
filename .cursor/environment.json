@@ -1,0 +1,16 @@
+{
+  "name": "cat_images static server",
+  "terminals": [
+    {
+      "name": "image-server",
+      "command": "python3 -m http.server 8000 --bind 0.0.0.0",
+      "description": "Serves the repository's image files over HTTP on port 8000 for browsing in a web browser."
+    }
+  ],
+  "ports": [
+    {
+      "name": "image-server",
+      "port": 8000
+    }
+  ]
+}
