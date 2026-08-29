@@ -1,0 +1,12 @@
+{
+  "remote.autoForwardPorts": true,
+  "remote.autoForwardPortsSource": "hybrid",
+  "remote.portsAttributes": {
+    "3000": {
+      "label": "telemetry-dash",
+      "onAutoForward": "openBrowser",
+      "protocol": "http",
+      "requireLocalPort": true
+    }
+  }
+}
