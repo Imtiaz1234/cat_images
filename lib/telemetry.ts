@@ -1,4 +1,4 @@
-export type NodeStatus = "online" | "degraded" | "offline";
+export type NodeStatus = "online" | "degraded" | "offline" | "critical";
 
 export type TelemetryRow = {
   timestamp: string;
@@ -24,7 +24,12 @@ export type StabilityPoint = {
   frequencyHz: number;
 };
 
-const NODE_STATUSES = new Set<NodeStatus>(["online", "degraded", "offline"]);
+const NODE_STATUSES = new Set<NodeStatus>([
+  "online",
+  "degraded",
+  "offline",
+  "critical",
+]);
 
 function isNodeStatus(value: string): value is NodeStatus {
   return NODE_STATUSES.has(value as NodeStatus);
