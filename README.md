@@ -2,6 +2,8 @@
 
 Polish messy Markdown into **blog-ready, publishable** posts.
 
+**Author:** [Mahinoor](https://github.com/mahin00r) · **Repository:** [github.com/mahin00r/mdpub](https://github.com/mahin00r/mdpub)
+
 `mdpub` applies a deterministic rules pipeline (headings, images, YAML frontmatter, slugs, canonical URLs) and can optionally ask an OpenAI-compatible model to fill missing title, description, tags, and slug. It does **not** rewrite the article body.
 
 ## Install
@@ -88,4 +90,4 @@ python3 -m pytest
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE). Copyright [Mahinoor](https://github.com/mahin00r).

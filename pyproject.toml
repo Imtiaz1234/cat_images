@@ -8,6 +8,7 @@ version = "0.1.0"
 description = "Polish Markdown files into blog-ready, publishable posts"
 readme = "README.md"
 license = { text = "MIT" }
+authors = [{ name = "Mahinoor", email = "mahin00r@users.noreply.github.com" }]
 requires-python = ">=3.12"
 dependencies = [
     "python-frontmatter>=1.1.0",
@@ -21,8 +22,10 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/Imtiaz1234/cat_images"
-Issues = "https://github.com/Imtiaz1234/cat_images/issues"
+Homepage = "https://github.com/mahin00r/mdpub"
+Repository = "https://github.com/mahin00r/mdpub"
+Issues = "https://github.com/mahin00r/mdpub/issues"
+Profile = "https://github.com/mahin00r"
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0", "httpx>=0.27"]
