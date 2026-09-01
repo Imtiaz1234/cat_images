@@ -1,0 +1,53 @@
+toc: false
+headings:
+  require_single_h1: true
+  no_skipped_levels: true
+images:
+  require_alt: true
+canonical:
+  trailing_slash: true
+presets:
+  generic:
+    required: [title, description, date, tags, slug]
+    optional: [canonical, draft]
+    keys:
+      title: title
+      description: description
+      date: date
+      tags: tags
+      slug: slug
+      canonical: canonical
+      draft: draft
+  hugo:
+    required: [title, description, date, tags, slug]
+    optional: [canonical, draft]
+    keys:
+      title: title
+      description: description
+      date: date
+      tags: tags
+      slug: slug
+      canonical: canonicalURL
+      draft: draft
+  jekyll:
+    required: [title, description, date, tags, slug]
+    optional: [canonical, draft]
+    keys:
+      title: title
+      description: description
+      date: date
+      tags: tags
+      slug: permalink
+      canonical: canonical_url
+      draft: draft
+  astro:
+    required: [title, description, date, tags, slug]
+    optional: [canonical, draft]
+    keys:
+      title: title
+      description: description
+      date: pubDate
+      tags: tags
+      slug: slug
+      canonical: canonical
+      draft: draft

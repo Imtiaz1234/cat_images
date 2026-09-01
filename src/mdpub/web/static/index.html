@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>mdpub — polish Markdown for publishing</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Newsreader:opsz,wght@6..72,500;6..72,650&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/static/styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  </head>
+  <body>
+    <header class="masthead">
+      <div class="brand">
+        <p class="kicker">Markdown publish pipeline</p>
+        <h1>mdpub</h1>
+      </div>
+      <p class="lede">
+        Drop in a messy draft. Get blog-ready Markdown: frontmatter, slug, tags,
+        canonical URL, and a clean heading structure.
+      </p>
+    </header>
+
+    <form id="controls" class="controls">
+      <label>
+        Preset
+        <select id="preset" name="preset">
+          <option value="generic" selected>generic</option>
+          <option value="hugo">hugo</option>
+          <option value="jekyll">jekyll</option>
+          <option value="astro">astro</option>
+        </select>
+      </label>
+      <label class="grow">
+        Site URL
+        <input
+          id="site-url"
+          name="site_url"
+          type="url"
+          placeholder="https://example.com/blog"
+        />
+      </label>
+      <label class="check">
+        <input id="toc" type="checkbox" />
+        Table of contents
+      </label>
+      <label class="check">
+        <input id="ai" type="checkbox" />
+        AI metadata
+      </label>
+      <div class="actions">
+        <label class="file-btn">
+          Upload .md
+          <input id="file" type="file" accept=".md,text/markdown,text/plain" />
+        </label>
+        <button type="submit" id="polish">Polish</button>
+        <button type="button" id="download" disabled>Download</button>
+      </div>
+    </form>
+
+    <main class="panes">
+      <section class="pane">
+        <header>
+          <h2>Original</h2>
+          <span id="source-name">untitled.md</span>
+        </header>
+        <textarea
+          id="source"
+          spellcheck="false"
+          placeholder="Paste Markdown here…"
+        ></textarea>
+      </section>
+      <section class="pane">
+        <header>
+          <h2>Polished</h2>
+          <span id="status">Waiting</span>
+        </header>
+        <div class="result">
+          <pre id="output" class="source-out"></pre>
+          <article id="preview" class="preview empty">
+            <p class="hint">Polished HTML preview will appear here.</p>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <aside id="notes" class="notes" hidden></aside>
+    <script src="/static/app.js"></script>
+  </body>
+</html>
