@@ -85,3 +85,7 @@ Configured in [`src/mdpub/rules/default.yaml`](src/mdpub/rules/default.yaml):
 ```bash
 python3 -m pytest
 ```
+
+## License
+
+MIT. See [LICENSE](LICENSE).
