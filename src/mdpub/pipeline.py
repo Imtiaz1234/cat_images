@@ -83,6 +83,15 @@ def polish_text(markdown: str, options: PolishOptions | None = None) -> PolishRe
     warnings: list[str] = []
     now = options.now or datetime.now()
     today: date = now.date() if isinstance(now, datetime) else now
+    site_url = (options.site_url or "").strip() or None
+    options = PolishOptions(
+        preset=options.preset,
+        ai=options.ai,
+        site_url=site_url,
+        toc=options.toc,
+        source_name=options.source_name,
+        now=options.now,
+    )
 
     post = frontmatter.loads(markdown)
     meta = dict(post.metadata)

@@ -8,6 +8,8 @@ const downloadBtn = document.getElementById("download");
 const fileInput = document.getElementById("file");
 
 const SAMPLE = `Getting started with backyard compost
+=====================================
+
 #### Why it matters
 
 Kitchen scraps don't have to go in the trash.  They become soil.

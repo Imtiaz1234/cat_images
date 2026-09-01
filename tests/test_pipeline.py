@@ -90,6 +90,15 @@ def test_polish_path_uses_filename_slug():
     assert result.frontmatter.get("slug") == "empty"
 
 
+def test_site_url_whitespace_still_builds_canonical():
+    source = (FIXTURES / "messy.md").read_text(encoding="utf-8")
+    result = polish_text(
+        source,
+        PolishOptions(preset="hugo", site_url="  https://example.com/blog  ", now=NOW),
+    )
+    assert result.frontmatter["canonicalURL"] == "https://example.com/blog/getting-started-with-backyard-compost/"
+
+
 def test_toc_option_inserts_headings():
     source = (FIXTURES / "messy.md").read_text(encoding="utf-8")
     result = polish_text(source, PolishOptions(toc=True, now=NOW))
