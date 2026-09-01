@@ -52,6 +52,7 @@ def polish(
     ai: bool = AiOption,
     site_url: Optional[str] = SiteOption,
     toc: bool = TocOption,
+    dry_run: bool = typer.Option(False, "--dry-run", help="Print results without writing files"),
 ) -> None:
     """Apply publish rules and write blog-ready Markdown."""
     preset = _validate_preset(preset)
@@ -62,19 +63,33 @@ def polish(
 
     options = PolishOptions(preset=preset, ai=ai, site_url=site_url, toc=toc)
     written = 0
+    errors = 0
     for source in files:
-        result = polish_path(source, options)
+        try:
+            result = polish_path(source, options)
+        except Exception as exc:  # noqa: BLE001 — keep a batch going after one bad file
+            errors += 1
+            typer.echo(f"ERROR {source}: {exc}", err=True)
+            continue
         dest = _output_path(source, path, out)
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        dest.write_text(result.markdown, encoding="utf-8")
-        written += 1
-        label = dest if dest != source else source
-        typer.echo(f"Polished {label}")
+        if dry_run:
+            typer.echo(f"Would write {dest}")
+        else:
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            dest.write_text(result.markdown, encoding="utf-8")
+            written += 1
+            label = dest if dest != source else source
+            typer.echo(f"Polished {label}")
         for warning in result.warnings:
             typer.echo(f"  warning: {warning}")
         for issue in result.issues:
             typer.echo(f"  issue: {issue}")
-    typer.echo(f"Wrote {written} file{'s' if written != 1 else ''}.")
+    if dry_run:
+        typer.echo(f"Checked {len(files) - errors} file{'s' if len(files) != 1 else ''}.")
+    else:
+        typer.echo(f"Wrote {written} file{'s' if written != 1 else ''}.")
+    if errors:
+        raise typer.Exit(code=1)
 
 
 @app.command()
@@ -95,7 +110,12 @@ def check(
     options = PolishOptions(preset=preset, ai=ai, site_url=site_url, toc=toc)
     failed = 0
     for source in files:
-        result = polish_path(source, options)
+        try:
+            result = polish_path(source, options)
+        except Exception as exc:  # noqa: BLE001
+            failed += 1
+            typer.echo(f"ERROR {source}: {exc}")
+            continue
         if result.issues:
             failed += 1
             typer.echo(f"FAIL {source}")

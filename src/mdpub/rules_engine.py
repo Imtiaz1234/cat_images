@@ -28,6 +28,60 @@ SETEXT_H2_RE = re.compile(r"^-{3,}\s*$")
 IMAGE_RE = re.compile(r"!\[([^\]]*)\]\(([^)\s]+)(?:\s+(?:\"[^\"]*\"|'[^']*'))?\)")
 FENCE_RE = re.compile(r"^(```|~~~)")
 TOC_HEADING_RE = re.compile(r"^#{2,6}\s+table of contents\s*$", re.IGNORECASE)
+REF_IMAGE_RE = re.compile(r"!\[([^\]]*)\]\[([^\]]+)\]")
+LINK_DEF_RE = re.compile(r"^\[([^\]]+)\]:\s+(\S+)")
+HTML_IMG_RE = re.compile(r"<img\b([^>]*?)(/?)>", re.IGNORECASE | re.DOTALL)
+HTML_SRC_RE = re.compile(r"""\bsrc\s*=\s*["']([^"']+)["']""", re.IGNORECASE)
+HTML_ALT_RE = re.compile(r"""\balt\s*=\s*["']([^"']*)["']""", re.IGNORECASE)
+EMPTY_LINK_RE = re.compile(r"\[[^\]]+\]\(\s*\)")
+STOPWORDS = frozenset(
+    {
+        "the",
+        "a",
+        "an",
+        "and",
+        "or",
+        "for",
+        "to",
+        "of",
+        "in",
+        "on",
+        "it",
+        "is",
+        "are",
+        "was",
+        "be",
+        "this",
+        "that",
+        "with",
+        "from",
+        "how",
+        "why",
+        "what",
+        "when",
+        "your",
+        "you",
+        "our",
+        "getting",
+        "started",
+        "common",
+        "only",
+        "just",
+        "about",
+        "into",
+        "using",
+        "use",
+        "into",
+        "its",
+        "not",
+        "but",
+        "can",
+        "will",
+        "more",
+        "than",
+        "then",
+    }
+)
 
 
 @dataclass
@@ -216,6 +270,97 @@ def fill_image_alts(body: str) -> tuple[str, list[str]]:
     return "\n".join(out_lines) + ("\n" if out_lines else ""), warnings
 
 
+def _alt_from_url(url: str) -> str:
+    name = Path(unquote(urlparse(url).path)).stem
+    name = name.replace("-", " ").replace("_", " ").strip()
+    return name or "image"
+
+
+def fill_reference_image_alts(body: str) -> tuple[str, list[str]]:
+    defs: dict[str, str] = {}
+    for _index, line, in_fence in _iter_line_state(body.splitlines()):
+        if in_fence:
+            continue
+        match = LINK_DEF_RE.match(line.strip())
+        if match:
+            defs[match.group(1).strip().lower()] = match.group(2)
+    warnings: list[str] = []
+
+    def replacer(match: re.Match[str]) -> str:
+        alt, ident = match.group(1), match.group(2)
+        if alt.strip():
+            return match.group(0)
+        url = defs.get(ident.strip().lower(), ident)
+        name = _alt_from_url(url)
+        warnings.append(f"Filled image alt from filename: {name}")
+        return f"![{name}][{ident}]"
+
+    out: list[str] = []
+    for _index, line, in_fence in _iter_line_state(body.splitlines()):
+        if in_fence:
+            out.append(line)
+        else:
+            out.append(REF_IMAGE_RE.sub(replacer, line))
+    return "\n".join(out) + ("\n" if out else ""), warnings
+
+
+def fill_html_image_alts(body: str) -> tuple[str, list[str]]:
+    warnings: list[str] = []
+
+    def replacer(match: re.Match[str]) -> str:
+        attrs, closer = match.group(1), match.group(2)
+        alt_match = HTML_ALT_RE.search(attrs)
+        if alt_match and alt_match.group(1).strip():
+            return match.group(0)
+        src_match = HTML_SRC_RE.search(attrs)
+        if not src_match:
+            return match.group(0)
+        name = _alt_from_url(src_match.group(1))
+        if alt_match:
+            attrs = HTML_ALT_RE.sub(f'alt="{name}"', attrs, count=1)
+        else:
+            attrs = attrs.rstrip() + f' alt="{name}"'
+        warnings.append(f"Filled image alt from filename: {name}")
+        return f"<img{attrs}{closer}>"
+
+    out: list[str] = []
+    for _index, line, in_fence in _iter_line_state(body.splitlines()):
+        if in_fence:
+            out.append(line)
+        else:
+            out.append(HTML_IMG_RE.sub(replacer, line))
+    return "\n".join(out) + ("\n" if out else ""), warnings
+
+
+def warn_empty_links(body: str) -> list[str]:
+    for _index, line, in_fence in _iter_line_state(body.splitlines()):
+        if not in_fence and EMPTY_LINK_RE.search(line):
+            return ["Empty link destination found"]
+    return []
+
+
+def infer_tags(title: str | None, body: str, limit: int = 8) -> list[str]:
+    texts: list[str] = []
+    if title:
+        texts.append(title)
+    for _idx, _level, text in extract_headings(body):
+        if TOC_HEADING_RE.match("#" * _level + " " + text):
+            continue
+        texts.append(text)
+    tags: list[str] = []
+    seen: set[str] = set()
+    for text in texts:
+        for word in re.findall(r"[A-Za-z][A-Za-z0-9]{2,}", text):
+            lowered = word.lower()
+            if lowered in STOPWORDS or lowered in seen:
+                continue
+            seen.add(lowered)
+            tags.append(lowered)
+            if len(tags) >= limit:
+                return tags
+    return tags
+
+
 LIST_MARKER_RE = re.compile(r"^(\s*)[*+](\s+)")
 
 
@@ -230,7 +375,10 @@ def normalize_list_markers(body: str) -> str:
 
 
 def format_markdown(body: str) -> str:
-    formatted = mdformat.text(body, options={"wrap": "keep"})
+    try:
+        formatted = mdformat.text(body, options={"wrap": "keep"})
+    except Exception:
+        formatted = body
     return formatted if formatted.endswith("\n") else formatted + "\n"
 
 
@@ -325,6 +473,11 @@ def apply_body_rules(
     if rules.images.require_alt:
         body, extra = fill_image_alts(body)
         warnings.extend(extra)
+        body, extra = fill_reference_image_alts(body)
+        warnings.extend(extra)
+        body, extra = fill_html_image_alts(body)
+        warnings.extend(extra)
+    warnings.extend(warn_empty_links(body))
     body = normalize_list_markers(body)
     body = format_markdown(body)
     if toc:
@@ -362,13 +515,19 @@ def apply_frontmatter_rules(
     if tags:
         set_logical(meta, preset, "tags", tags)
 
-    slug = read_slug(meta, preset)
-    if not slug:
-        source = current_title or slug_hint or (Path(source_name).stem if source_name else None)
-        if source:
-            slug = slugify(str(source))
-    if slug:
+    existing_slug_field = get_logical(meta, preset, "slug")
+    if is_missing(existing_slug_field):
+        candidates: list[str] = []
+        if current_title:
+            candidates.append(slugify(str(current_title)))
+        if slug_hint:
+            candidates.append(slugify(str(slug_hint)))
+        if source_name:
+            candidates.append(slugify(Path(source_name).stem))
+        slug = next((item for item in candidates if item), "untitled")
         set_logical(meta, preset, "slug", write_slug(slug, preset))
+    else:
+        slug = read_slug(meta, preset)
 
     if is_missing(get_logical(meta, preset, "draft")):
         set_logical(meta, preset, "draft", False)

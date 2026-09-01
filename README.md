@@ -16,7 +16,7 @@ Requires Python 3.12+.
 
 ```bash
 # Clean a file or an entire folder (writes in place)
-mdpub polish PATH [--out DIR] [--preset hugo|jekyll|astro|generic] [--ai] [--site-url URL] [--toc]
+mdpub polish PATH [--out DIR] [--preset hugo|jekyll|astro|generic] [--ai] [--site-url URL] [--toc] [--dry-run]
 
 # Lint only — exit 1 if required frontmatter is still missing
 mdpub check PATH [--preset ...]
@@ -36,7 +36,7 @@ Directory mode walks `*.md` recursively. `--out` preserves relative paths.
 | jekyll    | `date`    | `permalink` | `canonical_url` |
 | astro     | `pubDate` | `slug`      | `canonical`     |
 
-Required fields after polish: title, description, date, tags, slug. Date, slug, and draft are filled deterministically. Description is taken from the first paragraph when AI is off. Tags still need to be present or generated with `--ai`.
+Required fields after polish: title, description, date, tags, slug. Date, slug, draft, description (first paragraph), and tags (from title/headings) are filled deterministically. `--ai` can replace those guesses with model-written metadata.
 
 ## AI metadata
 
@@ -72,7 +72,11 @@ Configured in [`src/mdpub/rules/default.yaml`](src/mdpub/rules/default.yaml):
 
 - One H1; extra H1s are demoted; a missing H1 is taken from the title or the first heading
 - No skipped heading levels
-- Empty image alts are filled from the filename
+- Empty image alts are filled from the filename (Markdown, reference-style, and HTML `<img>`)
+- Invalid YAML frontmatter is skipped instead of crashing the batch or API
+- Existing Jekyll permalinks keep their directory prefix
+- Unicode titles fall back to the filename (then `untitled`) for the slug
+- Tags inferred from title and headings when missing
 - Consistent Markdown via [mdformat](https://mdformat.readthedocs.io/)
 - ISO dates, kebab-case slugs, optional TOC, canonical URL from `--site-url`
 

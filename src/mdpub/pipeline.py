@@ -23,6 +23,7 @@ from mdpub.rules_engine import (
     apply_body_rules,
     apply_frontmatter_rules,
     first_paragraph_excerpt,
+    infer_tags,
     slugify,
 )
 
@@ -93,9 +94,8 @@ def polish_text(markdown: str, options: PolishOptions | None = None) -> PolishRe
         now=options.now,
     )
 
-    post = frontmatter.loads(markdown)
-    meta = dict(post.metadata)
-    body = post.content or ""
+    meta, body, parse_warnings = _parse_document(markdown)
+    warnings.extend(parse_warnings)
     toc = rules.toc if options.toc is None else options.toc
 
     existing_title = get_logical(meta, preset, "title")
@@ -155,12 +155,17 @@ def polish_text(markdown: str, options: PolishOptions | None = None) -> PolishRe
                         set_logical(meta, preset, "canonical", url)
             except Exception as exc:  # noqa: BLE001 — surface model/network failures as warnings
                 warnings.append(f"AI metadata failed: {exc}")
-    else:
-        if is_missing(get_logical(meta, preset, "description")):
-            excerpt = first_paragraph_excerpt(body)
-            if excerpt:
-                set_logical(meta, preset, "description", excerpt)
-                warnings.append("Filled description from first paragraph")
+
+    if is_missing(get_logical(meta, preset, "description")):
+        excerpt = first_paragraph_excerpt(body)
+        if excerpt:
+            set_logical(meta, preset, "description", excerpt)
+            warnings.append("Filled description from first paragraph")
+    if is_missing(get_logical(meta, preset, "tags")):
+        tags = infer_tags(title, body)
+        if tags:
+            set_logical(meta, preset, "tags", tags)
+            warnings.append("Inferred tags from title and headings")
 
     if title and is_missing(get_logical(meta, preset, "title")):
         set_logical(meta, preset, "title", title)
@@ -175,6 +180,28 @@ def polish_text(markdown: str, options: PolishOptions | None = None) -> PolishRe
         issues=issues,
         body=body,
     )
+
+
+def _short_error(exc: Exception) -> str:
+    text = str(exc).strip().splitlines()[0]
+    return text or type(exc).__name__
+
+
+def _recover_body(markdown: str) -> str:
+    if markdown.startswith("---"):
+        parts = markdown.split("---", 2)
+        if len(parts) == 3:
+            return parts[2].lstrip("\n")
+    return markdown
+
+
+def _parse_document(markdown: str) -> tuple[dict[str, Any], str, list[str]]:
+    try:
+        post = frontmatter.loads(markdown)
+        return dict(post.metadata), post.content or "", []
+    except Exception as exc:
+        body = _recover_body(markdown)
+        return {}, body, [f"Ignored invalid frontmatter ({_short_error(exc)}); treating file as body-only"]
 
 
 def polish_path(path: Path, options: PolishOptions | None = None) -> PolishResult:

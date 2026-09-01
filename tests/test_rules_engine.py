@@ -1,9 +1,12 @@
 from mdpub.rules_engine import (
     convert_setext_headings,
     ensure_single_h1,
+    fill_html_image_alts,
     fill_image_alts,
+    fill_reference_image_alts,
     first_paragraph_excerpt,
     fix_skipped_heading_levels,
+    infer_tags,
     insert_toc,
     slugify,
 )
@@ -54,3 +57,20 @@ def test_toc_skips_h1_and_existing():
 def test_excerpt_ignores_headings_and_images():
     body = "# Title\n\n![x](a.png)\n\nHello **world** from [here](https://e.com).\n\nNext.\n"
     assert first_paragraph_excerpt(body) == "Hello world from here."
+
+
+def test_infer_tags_skips_stopwords():
+    tags = infer_tags("Getting started with backyard compost", "# Title\n\n## tools\n")
+    assert "backyard" in tags
+    assert "compost" in tags
+    assert "tools" in tags
+    assert "getting" not in tags
+
+
+def test_html_and_reference_alts_unit():
+    html, warnings = fill_html_image_alts('<img src="cat.png">\n')
+    assert 'alt="cat"' in html
+    assert warnings
+    refs, extra = fill_reference_image_alts("![ ][pic]\n\n[pic]: photos/my_dog.jpg\n")
+    assert "![my dog][pic]" in refs
+    assert extra

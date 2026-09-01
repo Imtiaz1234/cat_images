@@ -11,7 +11,7 @@ NOW = datetime(2026, 9, 1, 12, 0, 0)
 FIXTURES = Path(__file__).parent / "fixtures"
 
 
-def test_messy_fixture_becomes_publishable_minus_tags():
+def test_messy_fixture_becomes_publishable():
     source = (FIXTURES / "messy.md").read_text(encoding="utf-8")
     result = polish_text(
         source,
@@ -24,6 +24,8 @@ def test_messy_fixture_becomes_publishable_minus_tags():
     assert meta["canonical"] == "https://example.com/getting-started-with-backyard-compost/"
     assert meta["draft"] is False
     assert "Kitchen scraps" in meta["description"]
+    assert "compost" in meta["tags"]
+    assert "backyard" in meta["tags"]
     assert result.markdown.startswith("---\n")
     assert result.markdown.count("# Getting started with backyard compost") == 1
     assert "## Why it matters" in result.markdown
@@ -31,7 +33,7 @@ def test_messy_fixture_becomes_publishable_minus_tags():
     assert "![bin setup](bin-setup.png)" in result.markdown
     assert "- bucket" in result.markdown
     assert "- pitchfork" in result.markdown
-    assert any("Missing required field: tags" in issue for issue in result.issues)
+    assert result.issues == []
 
 
 def test_presets_use_expected_keys():
@@ -104,3 +106,64 @@ def test_toc_option_inserts_headings():
     result = polish_text(source, PolishOptions(toc=True, now=NOW))
     assert "Table of Contents" in result.markdown
     assert get_logical(result.frontmatter, get_preset("generic"), "title")
+
+
+def test_preserves_jekyll_permalink_prefix():
+    markdown = """---
+title: Kept
+description: Desc
+tags: [a]
+permalink: /blog/custom-path/
+---
+
+# Kept
+
+Body text here.
+"""
+    result = polish_text(markdown, PolishOptions(preset="jekyll", now=NOW))
+    assert result.frontmatter["permalink"] == "/blog/custom-path/"
+
+
+def test_unicode_title_falls_back_to_filename_slug():
+    result = polish_text(
+        "# 日本語タイトル\n\n本文です。\n",
+        PolishOptions(now=NOW, source_name="garden-notes.md"),
+    )
+    assert result.frontmatter["title"] == "日本語タイトル"
+    assert result.frontmatter["slug"] == "garden-notes"
+
+
+def test_invalid_frontmatter_is_recovered():
+    result = polish_text("---\ntitle: [unterminated\n---\n\n# Recovered\n\nHello.\n", PolishOptions(now=NOW))
+    assert result.frontmatter["title"] == "Recovered"
+    assert any("invalid frontmatter" in item for item in result.warnings)
+    assert result.markdown.startswith("---\n")
+
+
+def test_drops_foreign_preset_keys():
+    source = (FIXTURES / "messy.md").read_text(encoding="utf-8")
+    generic = polish_text(source, PolishOptions(preset="generic", site_url="https://ex.com", now=NOW))
+    hugo = polish_text(generic.markdown, PolishOptions(preset="hugo", site_url="https://ex.com", now=NOW))
+    assert "canonicalURL" in hugo.frontmatter
+    assert "canonical" not in hugo.frontmatter
+
+
+def test_html_and_reference_image_alts():
+    markdown = """# Title
+
+<img src="cat.png">
+
+![ ][pic]
+
+Hello there.
+
+[pic]: photos/my_dog.jpg
+"""
+    result = polish_text(markdown, PolishOptions(now=NOW))
+    assert 'alt="cat"' in result.body
+    assert "![my dog][pic]" in result.body
+
+
+def test_empty_link_warns():
+    result = polish_text("# Title\n\nSee [here]().\n\nPara text.\n", PolishOptions(now=NOW))
+    assert any("Empty link" in item for item in result.warnings)

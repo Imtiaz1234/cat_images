@@ -18,6 +18,13 @@ LOGICAL_FIELDS = (
     "draft",
 )
 
+# Alternate key names used by other presets. Drop these when writing a different schema.
+ALIAS_GROUPS = (
+    ("canonical", "canonicalURL", "canonical_url"),
+    ("slug", "permalink"),
+    ("date", "pubDate"),
+)
+
 
 def key_for(preset: PresetConfig, logical: str) -> str:
     return preset.keys.get(logical, logical)
@@ -94,8 +101,20 @@ def write_slug(slug: str, preset: PresetConfig) -> str:
     return slug
 
 
+def drop_foreign_keys(meta: dict[str, Any], preset: PresetConfig) -> dict[str, Any]:
+    """Remove sibling keys from other presets so output matches one schema."""
+    keep = {key_for(preset, logical) for logical in LOGICAL_FIELDS}
+    cleaned = dict(meta)
+    for group in ALIAS_GROUPS:
+        for name in group:
+            if name not in keep and name in cleaned:
+                del cleaned[name]
+    return cleaned
+
+
 def ordered_frontmatter(meta: dict[str, Any], preset: PresetConfig) -> dict[str, Any]:
     """Return metadata with logical fields first, then any extras."""
+    meta = drop_foreign_keys(meta, preset)
     ordered: dict[str, Any] = {}
     seen: set[str] = set()
     for logical in LOGICAL_FIELDS:

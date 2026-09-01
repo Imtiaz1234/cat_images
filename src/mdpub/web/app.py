@@ -58,6 +58,8 @@ def create_app() -> FastAPI:
             )
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
+        except Exception as exc:  # noqa: BLE001 — never 500 a draft on parse/format errors
+            raise HTTPException(status_code=400, detail=f"Could not polish markdown: {exc}") from exc
         return PolishResponse(
             markdown=result.markdown,
             frontmatter=result.frontmatter,

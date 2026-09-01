@@ -62,3 +62,19 @@ Enough body text to keep.
 def test_cli_rejects_unknown_preset():
     result = runner.invoke(app, ["check", str(FIXTURES / "messy.md"), "--preset", "nope"])
     assert result.exit_code != 0
+
+
+def test_dry_run_does_not_write(tmp_path: Path):
+    dest = tmp_path / "out"
+    result = runner.invoke(
+        app,
+        ["polish", str(FIXTURES / "messy.md"), "--out", str(dest), "--dry-run"],
+    )
+    assert result.exit_code == 0, result.output
+    assert "Would write" in result.output
+    assert not dest.exists() or not any(dest.rglob("*.md"))
+
+
+def test_check_passes_messy_fixture_after_rules():
+    result = runner.invoke(app, ["check", str(FIXTURES / "messy.md")])
+    assert result.exit_code == 0, result.output

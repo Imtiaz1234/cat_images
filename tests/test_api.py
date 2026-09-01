@@ -45,3 +45,14 @@ def test_polish_rejects_unknown_preset():
         json={"markdown": "# Hi\n", "preset": "ghost"},
     )
     assert response.status_code == 400
+
+
+def test_polish_recovers_invalid_frontmatter():
+    response = client.post(
+        "/api/polish",
+        json={"markdown": "---\ntitle: [unterminated\n---\n\n# Recovered\n\nHello.\n"},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["frontmatter"]["title"] == "Recovered"
+    assert any("invalid frontmatter" in item for item in data["warnings"])

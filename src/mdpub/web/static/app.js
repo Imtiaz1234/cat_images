@@ -44,8 +44,9 @@ function renderNotes(warnings, issues) {
   if (!lines.length) {
     lines.push('<p class="ok">Publish-ready. No remaining required-field gaps.</p>');
   }
-  notes.innerHTML = lines.join("");
-  notes.hidden = false;
+    notes.innerHTML = lines.join("");
+    notes.hidden = false;
+    notes.scrollIntoView({ block: "nearest", behavior: "smooth" });
 }
 
 function escapeHtml(text) {
