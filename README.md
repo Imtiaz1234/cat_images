@@ -8,7 +8,7 @@ This is the product you sell to Bangladesh / South Asia university clubs: exam e
 
 ## Invite the team
 
-1. Create **five free Discord apps** (see [docs/discord-setup.md](docs/discord-setup.md)).
+1. Create **five free Discord apps** (see [docs/discord-setup.md](docs/discord-setup.md) and the building manual [docs/BUILD.md](docs/BUILD.md)).
 2. Invite all five bots to the club server.
 3. Create the demo channels in [docs/demo-channels.md](docs/demo-channels.md): `#study-lab` `#assignment-desk` `#campus-desk` `#focus-room`.
 4. Create a Discord role named **Crew Member**.
@@ -20,6 +20,8 @@ python3.12 -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev]"
 python -m helpinghand --check-config
+python -m helpinghand --mail
+# Discord-only (does not send Gmail):
 python -m helpinghand
 ```
 
@@ -33,9 +35,9 @@ Club pitch: *invite the Crew into your helping-hand server; members get the team
 | **Tutor** | Concepts, step-by-step, quizzes | Study / exam questions, `/quiz` |
 | **Writer** | Outlines, citations, grammar, Bangla↔English, `/cv` | Assignments / reports — **not** full drafts |
 | **Campus** | Deadlines, scholarships, club/uni FAQs from **your** knowledge base | Campus life, `/kb add` (admin) |
-| **Focus** | Study plans, exam countdowns, Discord reminders | Planning — almost no Grok cost, `/plan` |
+| **Focus** | Study plans, exam countdowns, **Gmail** reminders after `PERMIT` | Planning — no Grok when a template is enough, `/plan` |
 
-Handoff rule: one student message → at most **one** Grok specialist reply. Captain may add a one-line “Tutor has this.”
+Handoff rule: one student message → **one speaker**. Captain may write `Captain → Tutor` as a header in the **same** message. Notifications are Gmail-only after `PERMIT`. Never Discord pings. `STOP` cancels.
 
 ## Pricing (BDT)
 
@@ -60,7 +62,7 @@ Writer produces outlines, checklists, citation format, and Socratic hints. It **
 - Never default to `grok-4.5` / `grok-4.6`. Never enable xAI `web_search` / Collections.
 - Campus answers come from **local SQLite FTS5** (`/kb add` your notices). Focus study plans are local templates.
 - Keyword + slash-command router first; Grok classify only if that fails, capped at ~20 tokens.
-- Replies capped at ~350 output tokens. Specialist system prompts are stable so prompt cache hits.
+- Replies capped at ~180 output tokens. Shared `CREW_PREAMBLE` stays identical so prompt cache hits.
 - Hard monthly Grok budget (`GROK_MONTHLY_BUDGET_USD`, default $10) pauses AI replies before you overspend. Campus FAQ + Focus plans still work.
 - Memory is a short rolling summary, not full chat.
 
@@ -79,8 +81,9 @@ Writer produces outlines, checklists, citation format, and Socratic hints. It **
 ## What you must provide before go-live
 
 - One xAI API key (pay-as-you-go credit, **not** SuperGrok).
-- Five Discord bot tokens, all invited to the same server (free).
-- Optional: first FAQ pack — uni name, semester dates, scholarship blurbs via `/kb add`.
+- One AgentMail API key if you want Gmail (`--mail`).
+- Five Discord bot tokens, all invited to the same server (free), if you want Discord.
+- Optional: first FAQ pack — uni name, semester dates, scholarship blurbs via `/kb add` or `KB ADD`.
 
 ## Tests
 
@@ -88,7 +91,7 @@ Writer produces outlines, checklists, citation format, and Socratic hints. It **
 pytest
 ```
 
-Router, quota, and budget tests do **not** need live Discord or xAI keys.
+Router, quota, budget, and Gmail notify tests do **not** need live Discord, xAI, or AgentMail keys.
 
 ## Out of scope (v1)
 

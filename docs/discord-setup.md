@@ -1,5 +1,7 @@
 # Create the five free Discord apps
 
+Gmail-only notifications, shared prompts, and the 10-minute session script: [BUILD.md](BUILD.md).
+
 Helping Hand Crew is **one Python process** and **five Discord application identities**. Apps are free. You do not buy five Grok subscriptions.
 
 ## 1. Open the developer portal

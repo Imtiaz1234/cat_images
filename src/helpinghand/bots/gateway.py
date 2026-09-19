@@ -1,4 +1,7 @@
-"""Five Discord gateway clients sharing one HelpingHandCrew brain."""
+"""Five Discord gateway clients sharing one HelpingHandCrew brain.
+
+One speaker per turn. No Discord pings for reminders — Gmail only after PERMIT.
+"""
 
 from __future__ import annotations
 
@@ -7,7 +10,7 @@ from typing import TYPE_CHECKING
 
 import discord
 from discord import app_commands
-from discord.ext import commands, tasks
+from discord.ext import commands
 
 from helpinghand import CREW_CHANNELS, PAID_ROLE_NAME, SPECIALISTS
 from helpinghand.i18n import t
@@ -70,22 +73,11 @@ async def publish_reply(
     *,
     reference: discord.Message | None = None,
 ) -> None:
-    """Captain may send a one-line handoff; the specialist sends the only real answer."""
-    if reply.handoff_line:
-        try:
-            await channel.send(reply.handoff_line)
-        except discord.HTTPException:
-            log.exception("handoff send failed")
-    speaker = crew.bots.get(reply.specialist, origin)
-    channel_id = getattr(channel, "id", None)
-    target = speaker.get_channel(channel_id) if channel_id and hasattr(speaker, "get_channel") else None
-    send_on = target or channel
+    """Exactly one Discord message. No handoff ping. No reminder pings."""
+    del crew  # never fan-out to a second bot
+    kwargs = {"reference": reference} if reference is not None else {}
     try:
-        if speaker is origin or send_on is channel:
-            kwargs = {"reference": reference} if reference is not None else {}
-            await channel.send(clip(reply.text), **kwargs)
-        else:
-            await send_on.send(clip(reply.text))
+        await channel.send(clip(reply.text), **kwargs)
     except TypeError:
         await channel.send(clip(reply.text))
     except discord.HTTPException:
@@ -105,37 +97,9 @@ class CrewBot(commands.Bot):
             log.info("%s slash commands synced", self.specialist_name)
         except discord.HTTPException:
             log.exception("%s slash sync failed", self.specialist_name)
-        if self.specialist_name == "focus":
-            self.reminder_loop.start()
 
     async def on_ready(self) -> None:
         log.info("%s online as %s", self.specialist_name, self.user)
-
-    async def close(self) -> None:
-        if self.specialist_name == "focus" and self.reminder_loop.is_running():
-            self.reminder_loop.cancel()
-        await super().close()
-
-    @tasks.loop(seconds=45)
-    async def reminder_loop(self) -> None:
-        for reminder in self.crew.reminders.due():
-            channel = self.get_channel(int(reminder.channel_id))
-            if channel is None:
-                try:
-                    channel = await self.fetch_channel(int(reminder.channel_id))
-                except discord.HTTPException:
-                    self.crew.reminders.mark_sent(reminder.id)
-                    continue
-            try:
-                await channel.send(clip(reminder.payload))
-            except discord.HTTPException:
-                log.exception("failed to send reminder %s", reminder.id)
-            else:
-                self.crew.reminders.mark_sent(reminder.id)
-
-    @reminder_loop.before_loop
-    async def before_reminders(self) -> None:
-        await self.wait_until_ready()
 
 
 def register_commands(bot: CrewBot) -> None:
@@ -150,6 +114,7 @@ def register_commands(bot: CrewBot) -> None:
         extra: dict | None = None,
         *,
         allow_classify: bool = False,
+        is_admin_cmd: bool = False,
     ) -> None:
         await interaction.response.defer(thinking=True)
         reply = await crew.handle(
@@ -159,57 +124,21 @@ def register_commands(bot: CrewBot) -> None:
             command=command,
             has_paid_role=has_paid_role(interaction.user, role_name),
             display_name=interaction.user.display_name,
-            channel_id=str(interaction.channel_id) if interaction.channel_id else None,
             extra=extra,
             allow_classify=allow_classify,
+            is_admin=is_admin_cmd or is_admin(interaction.user),
         )
-        # Slash reply comes from the bot the student invoked. For /ask, if a
-        # specialist owns it, Captain posts only the handoff line and the
-        # specialist client posts the answer (one Grok reply total).
-        if (
-            command == "ask"
-            and reply.specialist != "captain"
-            and reply.handoff_line
-            and interaction.channel is not None
-        ):
-            await interaction.followup.send(reply.handoff_line)
-            spec_bot = crew.bots.get(reply.specialist)
-            channel = interaction.channel
-            sent = False
-            if spec_bot and getattr(channel, "id", None):
-                target = spec_bot.get_channel(channel.id)
-                if target is not None:
-                    await target.send(clip(reply.text))
-                    sent = True
-            if not sent:
-                await channel.send(f"**{reply.specialist.title()}:** {clip(reply.text)}")
-            return
         await interaction.followup.send(clip(reply.text))
 
     if name == "captain":
-        @bot.tree.command(name="ask", description="Ask Helping Hand Crew (Captain routes to one specialist)")
+        @bot.tree.command(name="ask", description="Ask Helping Hand Crew (one teammate replies)")
         @app_commands.describe(question="Your question in Bangla, Banglish, or English")
         async def ask(interaction: discord.Interaction, question: str) -> None:
             await run_turn(interaction, question, "ask", allow_classify=True)
 
         @bot.tree.command(name="quota", description="See today's remaining Crew messages")
         async def quota(interaction: discord.Interaction) -> None:
-            status = crew.quota.status(
-                str(interaction.user.id),
-                has_paid_role=has_paid_role(interaction.user, role_name),
-            )
-            budget = crew.ledger.snapshot()
-            lines = [
-                f"**{status.role}** — {status.used}/{status.limit} messages today ({status.remaining} left).",
-            ]
-            if status.granted_until:
-                lines.append(f"Pass expires {status.granted_until}.")
-            if is_admin(interaction.user):
-                lines.append(
-                    f"Admin: Grok spend this month **${budget.estimated_usd:.4f}** / ${budget.cap_usd:.2f}"
-                    f"{' — PAUSED' if budget.paused else ''}."
-                )
-            await interaction.response.send_message("\n".join(lines), ephemeral=True)
+            await run_turn(interaction, "QUOTA", "quota")
 
         @bot.tree.command(name="grant", description="Admin: grant Crew Member quota after bKash/Nagad")
         @app_commands.describe(user="Student to upgrade", duration="e.g. 30d or 7d")
@@ -220,21 +149,22 @@ def register_commands(bot: CrewBot) -> None:
                 return
             try:
                 parse_duration(duration)
-                until = crew.quota.grant(str(user.id), duration, note=f"by:{interaction.user.id}")
             except ValueError as exc:
                 await interaction.response.send_message(str(exc), ephemeral=True)
                 return
+            await run_turn(
+                interaction,
+                f"GRANT {user.id} {duration}",
+                "grant",
+                extra={"target": str(user.id), "duration": duration},
+                is_admin_cmd=True,
+            )
             role = discord.utils.get(interaction.guild.roles, name=role_name) if interaction.guild else None
-            extra = ""
             if role and interaction.guild and interaction.guild.me.guild_permissions.manage_roles:
                 try:
                     await user.add_roles(role, reason="Helping Hand Crew /grant")
-                    extra = f" Discord role **{role_name}** assigned."
                 except discord.HTTPException:
-                    extra = f" Could not assign **{role_name}** — check bot role order."
-            await interaction.response.send_message(
-                f"Granted {user.mention} paid quota until **{until.isoformat()}**.{extra}"
-            )
+                    pass
 
     if name == "tutor":
         @bot.tree.command(name="quiz", description="Tutor: quiz me on a topic")
@@ -268,17 +198,18 @@ def register_commands(bot: CrewBot) -> None:
             if not is_admin(interaction.user):
                 await interaction.response.send_message(t("no_permission", lang), ephemeral=True)
                 return
-            try:
-                doc_id = crew.kb.add(title, body, added_by=str(interaction.user.id))
-            except ValueError as exc:
-                await interaction.response.send_message(str(exc), ephemeral=True)
-                return
-            await interaction.response.send_message(f"Saved FAQ **#{doc_id}**: {title}", ephemeral=True)
+            await run_turn(
+                interaction,
+                f"KB ADD {title} | {body}",
+                "kb",
+                extra={"title": title, "body": body},
+                is_admin_cmd=True,
+            )
 
         bot.tree.add_command(kb)
 
     if name == "focus":
-        @bot.tree.command(name="plan", description="Focus: exam countdown / study plan (almost no Grok cost)")
+        @bot.tree.command(name="plan", description="Focus: exam countdown (Gmail reminder after PERMIT)")
         @app_commands.describe(exam_date="YYYY-MM-DD", subjects="Comma-separated courses")
         async def plan(interaction: discord.Interaction, exam_date: str, subjects: str) -> None:
             await run_turn(
@@ -312,7 +243,6 @@ async def on_message_captain(bot: CrewBot, message: discord.Message) -> None:
             mentioned_specialist=mentioned,
             has_paid_role=has_paid_role(message.author, crew.settings.paid_role_name),
             display_name=message.author.display_name,
-            channel_id=str(message.channel.id),
         )
     await publish_reply(crew, bot, message.channel, reply, reference=message)
 

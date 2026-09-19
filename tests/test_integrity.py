@@ -54,4 +54,5 @@ async def test_writer_refuses_without_calling_grok() -> None:
 
     text = await writer.handle(Turn(), grok)
     assert "academic integrity" in text.lower()
+    assert "1." in text and "5." in text
     assert grok.chat_calls == []

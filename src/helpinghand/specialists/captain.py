@@ -1,5 +1,5 @@
 from helpinghand.i18n import t
-from helpinghand.specialists.prompts import CAPTAIN_SYSTEM, grok_specialist_reply
+from helpinghand.specialists.prompts import grok_specialist_reply
 
 
 class Captain:
@@ -10,7 +10,7 @@ class Captain:
         if not text or _short_hello(text):
             return t("greet", turn.language)
         return await grok_specialist_reply(
-            grok, turn, name=self.name, system=CAPTAIN_SYSTEM, conv_id="helpinghand-captain"
+            grok, turn, name=self.name, system=None, conv_id="helpinghand-crew"
         )
 
 

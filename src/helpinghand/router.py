@@ -35,6 +35,8 @@ TUTOR_KEYWORDS = (
     "study",
     "homework",
     "tutorial",
+    "linked list",
+    "algorithm",
     "physics",
     "chemistry",
     "biology",

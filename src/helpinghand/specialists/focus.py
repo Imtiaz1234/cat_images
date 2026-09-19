@@ -11,6 +11,7 @@ class Focus:
         self.reminders = reminders
 
     async def handle(self, turn, grok=None) -> str:
+        del grok  # template only — never Grok when a plan can be built locally
         exam = None
         extra_date = turn.extra.get("exam_date")
         if extra_date:
@@ -27,15 +28,17 @@ class Focus:
             subjects=subjects,
             lang=turn.language,
         )
-        if self.reminders and plan.reminder_at and turn.extra.get("channel_id"):
+        if self.reminders and plan.reminder_at:
             when = plan.reminder_at
             if when.tzinfo is None:
                 when = when.replace(tzinfo=timezone.utc)
             if when > datetime.now(timezone.utc):
+                line = f"exam tomorrow ({plan.exam_on}): {', '.join(plan.subjects)}"
                 self.reminders.add(
                     user_id=turn.user_id,
-                    channel_id=turn.extra["channel_id"],
                     fire_at=when,
-                    payload=f"<@{turn.user_id}> exam countdown: **{plan.exam_on}** — {', '.join(plan.subjects)}",
+                    line=line,
+                    kind="reminder",
+                    sender="focus",
                 )
         return plan.text

@@ -47,7 +47,7 @@ class Settings:
     grok_default_model: str = DEFAULT_MODEL
     grok_code_model: str = CODE_MODEL
     grok_monthly_budget_usd: float = 10.0
-    grok_max_output_tokens: int = 350
+    grok_max_output_tokens: int = 180
     grok_classify_max_tokens: int = 20
     grok_reasoning_effort: str = "none"
     discord_token_captain: str = ""
@@ -60,6 +60,9 @@ class Settings:
     paid_daily_quota: int = 80
     paid_role_name: str = PAID_ROLE_NAME
     seed_sample_faqs: bool = True
+    agentmail_api_key: str = ""
+    mail_notify_to: str = ""
+    mail_admins: str = ""
 
     @classmethod
     def from_env(cls, *, dotenv: bool = True) -> Settings:
@@ -71,7 +74,7 @@ class Settings:
             grok_default_model=os.getenv("GROK_DEFAULT_MODEL", DEFAULT_MODEL).strip() or DEFAULT_MODEL,
             grok_code_model=os.getenv("GROK_CODE_MODEL", CODE_MODEL).strip() or CODE_MODEL,
             grok_monthly_budget_usd=_f("GROK_MONTHLY_BUDGET_USD", 10.0),
-            grok_max_output_tokens=_i("GROK_MAX_OUTPUT_TOKENS", 350),
+            grok_max_output_tokens=_i("GROK_MAX_OUTPUT_TOKENS", 180),
             grok_classify_max_tokens=_i("GROK_CLASSIFY_MAX_TOKENS", 20),
             grok_reasoning_effort=os.getenv("GROK_REASONING_EFFORT", "none").strip() or "none",
             discord_token_captain=os.getenv("DISCORD_TOKEN_CAPTAIN", "").strip(),
@@ -84,6 +87,9 @@ class Settings:
             paid_daily_quota=_i("PAID_DAILY_QUOTA", 80),
             paid_role_name=os.getenv("PAID_ROLE_NAME", PAID_ROLE_NAME).strip() or PAID_ROLE_NAME,
             seed_sample_faqs=_b("SEED_SAMPLE_FAQS", True),
+            agentmail_api_key=os.getenv("AGENTMAIL_API_KEY", "").strip(),
+            mail_notify_to=os.getenv("MAIL_NOTIFY_TO", "").strip(),
+            mail_admins=os.getenv("MAIL_ADMINS", "").strip(),
         )
         settings.warn_if_expensive()
         return settings
@@ -127,4 +133,26 @@ class Settings:
                 "Missing required env vars: "
                 + ", ".join(missing)
                 + ". Copy .env.example to .env and add one xAI key plus five Discord bot tokens."
+            )
+
+    def mail_admin_list(self) -> list[str]:
+        raw = self.mail_admins or self.mail_notify_to
+        return [part.strip().lower() for part in raw.split(",") if part.strip()]
+
+    def is_mail_admin(self, email: str) -> bool:
+        return (email or "").strip().lower() in set(self.mail_admin_list())
+
+    def require_mail(self) -> None:
+        missing = []
+        if not self.xai_api_key:
+            missing.append("XAI_API_KEY")
+        if not self.agentmail_api_key:
+            missing.append("AGENTMAIL_API_KEY")
+        if not self.mail_notify_to:
+            missing.append("MAIL_NOTIFY_TO")
+        if missing:
+            raise SystemExit(
+                "Missing required env vars for --mail: "
+                + ", ".join(missing)
+                + ". See docs/BUILD.md."
             )

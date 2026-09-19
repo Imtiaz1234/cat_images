@@ -14,12 +14,14 @@ async def test_one_specialist_and_handoff_line(tmp_path) -> None:
     crew = HelpingHandCrew(settings(tmp_path), grok=grok)
     reply = await crew.handle(user_id="s1", content="explain this exam physics formula")
     assert reply.specialist == "tutor"
-    assert reply.handoff_line is not None
-    assert "Tutor" in reply.handoff_line
+    assert reply.speakers == ("tutor",)
+    assert reply.handoff_line is None
+    assert reply.text.startswith("Captain → Tutor")
     assert reply.used_grok
     assert grok.chat_calls  # exactly the specialist, not five bots
     assert all(c.get("specialist") == "tutor" for c in grok.chat_calls)
     assert grok.classify_calls == []
+    assert grok.chat_calls[0]["messages"][0]["content"].startswith("You are one member of Helping Hand Crew")
 
 
 @pytest.mark.asyncio

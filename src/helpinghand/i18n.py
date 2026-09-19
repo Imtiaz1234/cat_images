@@ -55,36 +55,38 @@ STRINGS: dict[str, dict[str, str]] = {
     "integrity_refuse": {
         "en": (
             "I won't write a full assignment — that would break academic integrity. "
-            "I **will** help with an outline, citation format, a checklist, and Socratic hints "
-            "so you can write it yourself. Tell me the topic and citation style (Harvard / APA / IEEE)."
+            "Five outline bullets instead:\n"
+            "1. Title + one-sentence claim\n"
+            "2. Context / why it matters\n"
+            "3. Three supporting points with a source each\n"
+            "4. Counter-argument and reply\n"
+            "5. Close + Harvard/APA/IEEE citation list to collect\n"
+            "Reply with the topic if you want these tailored. PERMIT is only for Gmail notifies, never Discord."
         ),
         "bn": (
             "পুরো অ্যাসাইনমেন্ট লিখে দিই না — এটা একাডেমিক ইমানদারির বাইরে। "
-            "আউটলাইন, রেফারেন্স ফরম্যাট, চেকলিস্ট আর ইঙ্গিত দিতে পারি যাতে তুমি নিজে লেখো। "
-            "টপিক আর সাইটেশন স্টাইল বলো (Harvard / APA / IEEE)।"
+            "পাঁচটা আউটলাইন বুলেট:\n"
+            "1. শিরোনাম + এক বাক্যের দাবি\n"
+            "2. প্রসঙ্গ\n"
+            "3. তিনটি যুক্তি + সূত্র\n"
+            "4. বিপরীত যুক্তি\n"
+            "5. শেষ + Harvard/APA/IEEE তালিকা\n"
+            "টপিক বলো, সাজায়ে দিই।"
         ),
         "mix": (
-            "Full assignment লিখে দিই না — academic integrity. "
-            "Outline, citation format, checklist আর Socratic hints দিব, তুমি লিখবে। "
-            "Topic আর style বলো (Harvard / APA / IEEE)."
+            "Full assignment লিখে দিই না — academic integrity. Five outline bullets:\n"
+            "1. Title + claim\n"
+            "2. Context\n"
+            "3. Three points + sources\n"
+            "4. Counter-argument\n"
+            "5. Close + citation list\n"
+            "Topic বলো."
         ),
     },
     "greet": {
-        "en": (
-            "I'm **Captain** of Helping Hand Crew — Tutor, Writer, Campus, and Focus. "
-            "Ask a study question, an assignment outline, a campus FAQ, or a study plan. "
-            "Bangla, Banglish, or English is fine. Use `/quota` to see today's remaining messages."
-        ),
-        "bn": (
-            "আমি **Captain**, Helping Hand Crew — সাথে Tutor, Writer, Campus আর Focus। "
-            "পড়াশোনার প্রশ্ন, অ্যাসাইনমেন্ট আউটলাইন, ক্যাম্পাস FAQ, বা স্টাডি প্ল্যান জিজ্ঞেস করো। "
-            "বাংলা, ইংরেজি, বাংলা-ইংলিশ সব চলে। আজকের বাকি মেসেজ `/quota`।"
-        ),
-        "mix": (
-            "I'm **Captain** of Helping Hand Crew — Tutor, Writer, Campus, Focus। "
-            "Study question, assignment outline, campus FAQ, বা study plan জিজ্ঞেস করো। "
-            "`/quota` দিলে remaining messages দেখবে।"
-        ),
+        "en": "Captain. One question — I send it to one teammate. Email PERMIT for Gmail reminders (never Discord).",
+        "bn": "Captain. একটা প্রশ্ন পাঠাও — একজন teammate নিবে। Gmail reminder চালু করতে PERMIT লিখো (Discord নয়)।",
+        "mix": "Captain. One question, one teammate. PERMIT = Gmail notifies only, never Discord.",
     },
     "campus_empty": {
         "en": (
@@ -109,6 +111,26 @@ STRINGS: dict[str, dict[str, str]] = {
         "en": "Only server admins (Manage Server) can run this command.",
         "bn": "শুধু সার্ভার অ্যাডমিন (Manage Server) এই কমান্ড চালাতে পারে।",
         "mix": "শুধু admin (Manage Server) এই command চালাতে পারে।",
+    },
+    "ask_permit": {
+        "en": "Reply PERMIT to get this reminder on Gmail only. Never Discord. STOP cancels.",
+        "bn": "Gmail reminder চালু করতে PERMIT লিখো। Discord-এ পিং যাবে না। STOP বাতিল করে।",
+        "mix": "PERMIT = Gmail reminder only, never Discord. STOP cancels.",
+    },
+    "notify_permitted": {
+        "en": "Gmail notifies on. Crew will email reminders/quota/grant only — never Discord. Reply STOP to cancel.",
+        "bn": "Gmail নোটিফাই চালু। শুধু ইমেইল — Discord নয়। বন্ধ করতে STOP।",
+        "mix": "Gmail notifies on. Never Discord. STOP cancels.",
+    },
+    "notify_stopped": {
+        "en": "STOP recorded. No more Gmail notifies from Helping Hand Crew.",
+        "bn": "STOP রাখা হলো। আর Gmail notify যাবে না।",
+        "mix": "STOP recorded. No more Gmail notifies.",
+    },
+    "notify_stopped_locked": {
+        "en": "STOP already recorded. Crew will not email Gmail notifies again.",
+        "bn": "STOP আগেই আছে। আর Gmail যাবে না।",
+        "mix": "STOP already recorded. No more Gmail.",
     },
 }
 
